@@ -203,12 +203,12 @@ stored AS ORC;
 	```
 
 	* 说明：
-	  * name为"_hash_key_"和"_empty_sort_key_"表示特殊意义：
-        * "_hash_key_"指定的列作为Pegasus存储时的HashKey；
-        * "_empty_sort_key_"指定的列在存储时使用空串("")作为SortKey；
+	  * name为"\_hash\_key_"和"\_empty\_sort\_key_"表示特殊意义：
+        * "\_hash\_key_"指定的列作为Pegasus存储时的HashKey；
+        * "\_empty\_sort\_key_"指定的列在存储时使用空串("")作为SortKey；
 	  * name不能有重复；
-	  * 必须指定"_hash_key_"列；
-	  * 除了"_hash_key_"列外，至少再指定一个数据列；
+	  * 必须指定"\_hash\_key_"列；
+	  * 除了"\_hash\_key_"列外，至少再指定一个数据列；
 
 	* 必选：是 <br />
 
