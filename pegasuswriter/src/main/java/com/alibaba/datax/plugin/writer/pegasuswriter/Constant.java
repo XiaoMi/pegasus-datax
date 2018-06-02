@@ -11,4 +11,10 @@ public class Constant {
     public static final int DEFAULT_RETRY_COUNT = 2;
 
     public static final int DEFAULT_RETRY_DELAY_MS = 10000;
+
+    public static final String HASH_KEY = "_hash_key_";
+
+    public static final String EMPTY_SORT_KEY = "_empty_sort_key_";
+
+    public static final byte[] EMPTY_BYTES = "".getBytes();
 }

@@ -86,13 +86,13 @@ public class PegasusWriter extends Writer {
                                 String.format("您在columns中指定了name为[%s]的项，其index为负数", name));
                     }
                 }
-                if (!nameSet.contains(Key.HASH_KEY)) {
+                if (!nameSet.contains(Constant.HASH_KEY)) {
                     throw DataXException.asDataXException(PegasusWriterErrorCode.REQUIRED_VALUE,
-                            String.format("您需要在columns中指定name为[%s]的项", Key.HASH_KEY));
+                            String.format("您需要在columns中指定name为[%s]的项", Constant.HASH_KEY));
                 }
                 if (nameSet.size() < 2) {
                     throw DataXException.asDataXException(PegasusWriterErrorCode.REQUIRED_VALUE,
-                            String.format("您需要在columns中指定至少一个name不为[%s]的项", Key.HASH_KEY));
+                            String.format("您需要在columns中指定至少一个name不为[%s]的项", Constant.HASH_KEY));
                 }
             }
         }
@@ -154,10 +154,12 @@ public class PegasusWriter extends Writer {
             for (Configuration eachColumnConf : columns) {
                 String name = eachColumnConf.getString(Key.NAME);
                 int index = eachColumnConf.getInt(Key.INDEX);
-                if (name.equals(Key.HASH_KEY)) {
+                if (name.equals(Constant.HASH_KEY)) {
                     this.hashKeyIndex = index;
+                } else if (name.equals(Constant.EMPTY_SORT_KEY)) {
+                    this.sortKeyList.add(Pair.of(Constant.EMPTY_BYTES, Integer.valueOf(index)));
                 } else {
-                    this.sortKeyList.add(Pair.of(name.getBytes(), Integer.valueOf(index)));
+                    this.sortKeyList.add(Pair.of(name.getBytes(this.encoding), Integer.valueOf(index)));
                 }
             }
         }

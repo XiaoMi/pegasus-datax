@@ -54,7 +54,7 @@ public class PegasusUtil {
     public static byte[] columnToBytes(Column column, Charset encoding) {
         String str = column.asString();
         if (str == null) {
-            return "".getBytes(encoding);
+            return Constant.EMPTY_BYTES;
         } else {
             return str.getBytes(encoding);
         }

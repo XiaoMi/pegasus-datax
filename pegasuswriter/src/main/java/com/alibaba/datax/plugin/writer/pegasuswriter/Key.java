@@ -23,6 +23,4 @@ public class Key {
     public static final String NAME = "name";
 
     public static final String INDEX = "index";
-
-    public static final String HASH_KEY = "_hash_key_";
 }
