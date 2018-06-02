@@ -8,10 +8,12 @@ import com.alibaba.datax.common.spi.Writer;
 import com.alibaba.datax.common.util.Configuration;
 import com.xiaomi.infra.pegasus.client.PException;
 import com.xiaomi.infra.pegasus.client.PegasusTableInterface;
+import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -32,6 +34,37 @@ public class PegasusWriter extends Writer {
         private void validateParameter() {
             // check cluster & table
             PegasusUtil.openTable(this.originalConfig);
+
+            // check encoding
+            String encoding = this.originalConfig.getString(Key.ENCODING, Constant.DEFAULT_ENCODING);
+            try {
+                Charsets.toCharset(encoding);
+            } catch (Exception e) {
+                throw DataXException.asDataXException(PegasusWriterErrorCode.ILLEGAL_VALUE,
+                        String.format("您配置了不合法的%s: [%s]", Key.ENCODING, encoding));
+            }
+
+            // check int values
+            int timeout = this.originalConfig.getInt(Key.TIMEOUT_MS, Constant.DEFAULT_TIMEOUT_MS);
+            if (timeout < 0) {
+                throw DataXException.asDataXException(PegasusWriterErrorCode.ILLEGAL_VALUE,
+                        String.format("您配置了不合法的%s: [%d]", Key.TIMEOUT_MS, timeout));
+            }
+            int ttl = this.originalConfig.getInt(Key.TTL_SECONDS, Constant.DEFAULT_TTL_SECONDS);
+            if (ttl < 0) {
+                throw DataXException.asDataXException(PegasusWriterErrorCode.ILLEGAL_VALUE,
+                        String.format("您配置了不合法的%s: [%d]", Key.TTL_SECONDS, ttl));
+            }
+            int retry_count = this.originalConfig.getInt(Key.RETRY_COUNT, Constant.DEFAULT_RETRY_COUNT);
+            if (retry_count < 0) {
+                throw DataXException.asDataXException(PegasusWriterErrorCode.ILLEGAL_VALUE,
+                        String.format("您配置了不合法的%s: [%d]", Key.RETRY_COUNT, retry_count));
+            }
+            int retry_delay = this.originalConfig.getInt(Key.RETRY_DELAY_MS, Constant.DEFAULT_RETRY_DELAY_MS);
+            if (retry_delay < 0) {
+                throw DataXException.asDataXException(PegasusWriterErrorCode.ILLEGAL_VALUE,
+                        String.format("您配置了不合法的%s: [%d]", Key.RETRY_DELAY_MS, retry_delay));
+            }
 
             // check columns
             List<Configuration> columns = this.originalConfig.getListConfiguration(Key.COLUMN);
@@ -91,13 +124,15 @@ public class PegasusWriter extends Writer {
 
         private Configuration writerSliceConfig;
 
-        private int timeoutMs; // default 10000
+        private Charset encoding;
 
-        private int ttlSeconds; // default 0
+        private int timeoutMs;
 
-        private int retryCount; // default 2
+        private int ttlSeconds;
 
-        private int retryDelayMs; // default 10000
+        private int retryCount;
+
+        private int retryDelayMs;
 
         private PegasusTableInterface pegasusTable;
 
@@ -108,10 +143,11 @@ public class PegasusWriter extends Writer {
         @Override
         public void init() {
             this.writerSliceConfig = getPluginJobConf();
-            this.timeoutMs = this.writerSliceConfig.getInt(Key.TIMEOUT_MS, 10000);
-            this.ttlSeconds = this.writerSliceConfig.getInt(Key.TTL_SECONDS, 0);
-            this.retryCount = this.writerSliceConfig.getInt(Key.RETRY_COUNT, 2);
-            this.retryDelayMs = this.writerSliceConfig.getInt(Key.RETRY_DELAY_MS, 10000);
+            this.encoding = Charsets.toCharset(this.writerSliceConfig.getString(Key.ENCODING, Constant.DEFAULT_ENCODING));
+            this.timeoutMs = this.writerSliceConfig.getInt(Key.TIMEOUT_MS, Constant.DEFAULT_TIMEOUT_MS);
+            this.ttlSeconds = this.writerSliceConfig.getInt(Key.TTL_SECONDS, Constant.DEFAULT_TTL_SECONDS);
+            this.retryCount = this.writerSliceConfig.getInt(Key.RETRY_COUNT, Constant.DEFAULT_RETRY_COUNT);
+            this.retryDelayMs = this.writerSliceConfig.getInt(Key.RETRY_DELAY_MS, Constant.DEFAULT_RETRY_DELAY_MS);
             this.pegasusTable = PegasusUtil.openTable(this.writerSliceConfig);
             this.sortKeyList = new ArrayList<Pair<byte[], Integer>>();
             List<Configuration> columns = this.writerSliceConfig.getListConfiguration(Key.COLUMN);
@@ -140,7 +176,7 @@ public class PegasusWriter extends Writer {
                          throw DataXException.asDataXException(PegasusWriterErrorCode.RUNTIME_EXCEPTION,
                                  String.format("record中找不到index为[%d]的column.", this.hashKeyIndex));
                      }
-                     byte[] hashKey = PegasusUtil.columnToBytes(column);
+                     byte[] hashKey = PegasusUtil.columnToBytes(column, this.encoding);
                      List<Pair<byte[], byte[]>> values = new ArrayList<Pair<byte[], byte[]>>();
                      for (Pair<byte[], Integer> pair : this.sortKeyList) {
                          column = record.getColumn(pair.getRight());
@@ -148,7 +184,7 @@ public class PegasusWriter extends Writer {
                              throw DataXException.asDataXException(PegasusWriterErrorCode.RUNTIME_EXCEPTION,
                                      String.format("record中找不到index为[%d]的column.", pair.getRight()));
                          }
-                         values.add(Pair.of(pair.getLeft(), PegasusUtil.columnToBytes(column)));
+                         values.add(Pair.of(pair.getLeft(), PegasusUtil.columnToBytes(column, this.encoding)));
                      }
                      int retry = 0;
                      while (true) {
@@ -161,8 +197,10 @@ public class PegasusWriter extends Writer {
                                          String.format("写入数据到Pegasus失败: ", pe.getMessage()));
                              }
                          }
+                         if (this.retryDelayMs > 0) {
+                             Thread.sleep(this.retryDelayMs);
+                         }
                          retry++;
-                         Thread.sleep(this.retryDelayMs);
                      }
                 } catch (Exception e) {
                     super.getTaskPluginCollector().collectDirtyRecord(record, e);

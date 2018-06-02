@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -50,12 +51,12 @@ public class PegasusUtil {
         return table;
     }
 
-    public static byte[] columnToBytes(Column column) {
+    public static byte[] columnToBytes(Column column, Charset encoding) {
         String str = column.asString();
         if (str == null) {
-            return "".getBytes();
+            return "".getBytes(encoding);
         } else {
-            return str.getBytes();
+            return str.getBytes(encoding);
         }
     }
 }

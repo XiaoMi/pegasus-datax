@@ -3,6 +3,7 @@
     "parameter": {
         "cluster": "",
         "table": "",
+        "encoding": "",
         "timeout_ms": "",
         "ttl_seconds": "",
         "retry_count": "",
