@@ -1,5 +1,8 @@
 package com.alibaba.datax.plugin.writer.pegasuswriter;
 
+/**
+ * Created by qinzuoyan on 18/6/1.
+ */
 public class Constant {
 
     public static final String DEFAULT_ENCODING = "UTF-8";
