@@ -3,11 +3,11 @@
     "parameter": {
         "cluster": "",
         "table": "",
-        "encoding": "",
-        "timeout_ms": "",
-        "ttl_seconds": "",
-        "retry_count": "",
-        "retry_delay_ms": "",
+        "encoding": "UTF-8",
+        "timeout_ms": "10000",
+        "ttl_seconds": "0",
+        "retry_count": "2",
+        "retry_delay_ms": "10000",
         "column": []
     }
 }
