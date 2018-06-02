@@ -36,7 +36,7 @@ public class PegasusWriter extends Writer {
             // check columns
             List<Configuration> columns = this.originalConfig.getListConfiguration(Key.COLUMN);
             if (null == columns || columns.size() == 0) {
-                throw DataXException.asDataXException(PegasusWriterErrorCode.REQUIRED_VALUE, "您需要指定columns");
+                throw DataXException.asDataXException(PegasusWriterErrorCode.REQUIRED_VALUE, "您需要指定column");
             }else{
                 Set<String> nameSet = new HashSet<String>();
                 for (Configuration eachColumnConf : columns) {
@@ -138,7 +138,7 @@ public class PegasusWriter extends Writer {
                     Column column = record.getColumn(this.hashKeyIndex);
                      if (column == null) {
                          throw DataXException.asDataXException(PegasusWriterErrorCode.RUNTIME_EXCEPTION,
-                                 String.format("record中找不到index为[%d]的Hash Key Column.", this.hashKeyIndex));
+                                 String.format("record中找不到index为[%d]的column.", this.hashKeyIndex));
                      }
                      byte[] hashKey = PegasusUtil.columnToBytes(column);
                      List<Pair<byte[], byte[]>> values = new ArrayList<Pair<byte[], byte[]>>();
@@ -146,7 +146,7 @@ public class PegasusWriter extends Writer {
                          column = record.getColumn(pair.getRight());
                          if (column == null) {
                              throw DataXException.asDataXException(PegasusWriterErrorCode.RUNTIME_EXCEPTION,
-                                     String.format("record中找不到index为[%d]的Value Column.", pair.getRight()));
+                                     String.format("record中找不到index为[%d]的column.", pair.getRight()));
                          }
                          values.add(Pair.of(pair.getLeft(), PegasusUtil.columnToBytes(column)));
                      }
@@ -154,6 +154,7 @@ public class PegasusWriter extends Writer {
                      while (true) {
                          try {
                              this.pegasusTable.multiSet(hashKey, values, this.ttlSeconds, this.timeoutMs);
+                             break;
                          } catch (PException pe) {
                              if (retry >= this.retryCount) {
                                  throw DataXException.asDataXException(PegasusWriterErrorCode.RUNTIME_EXCEPTION,
