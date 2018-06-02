@@ -9,6 +9,7 @@ Writer提供向[Pegasus](https://github.com/xiaomi/pegasus)系统的指定表中
 
 ## 2 功能与限制
 
+* 写数据使用[Pegasus Java Client](https://github.com/xiaomi/pegasus-java-client)，当前使用[1.8.0-thrift-0.11.0-inlined-release](https://github.com/XiaoMi/pegasus-java-client/releases/tag/1.8.0-thrift-0.11.0-inlined-release)版本，你需要先maven install该版本的客户端库；
 * Pegasus是Key-Value系统，不支持Schema，所有类型的数据存储到Pegasus中时都需要转化为byte[]进行存储；
 * 通过column配置列映射，指定name作为Pegasus存储的SortKey，指定index来确定哪一列作为Pegasus存储的Vale；
 * 需要在column配置指定一个列作为Pegasus存储的HashKey，且这一列必须是unique的；
