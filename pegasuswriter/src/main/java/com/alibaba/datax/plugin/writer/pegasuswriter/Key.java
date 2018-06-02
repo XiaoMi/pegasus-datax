@@ -16,7 +16,7 @@ public class Key {
 
     public static final String RETRY_DELAY_MS = "retry_delay_ms";
 
-    public static final String COLUMNS = "columns";
+    public static final String COLUMN = "column";
 
     public static final String NAME = "name";
 

@@ -34,7 +34,7 @@ public class PegasusWriter extends Writer {
             PegasusUtil.openTable(this.originalConfig);
 
             // check columns
-            List<Configuration> columns = this.originalConfig.getListConfiguration(Key.COLUMNS);
+            List<Configuration> columns = this.originalConfig.getListConfiguration(Key.COLUMN);
             if (null == columns || columns.size() == 0) {
                 throw DataXException.asDataXException(PegasusWriterErrorCode.REQUIRED_VALUE, "您需要指定columns");
             }else{
@@ -114,7 +114,7 @@ public class PegasusWriter extends Writer {
             this.retryDelayMs = this.writerSliceConfig.getInt(Key.RETRY_DELAY_MS, 10000);
             this.pegasusTable = PegasusUtil.openTable(this.writerSliceConfig);
             this.sortKeyList = new ArrayList<Pair<byte[], Integer>>();
-            List<Configuration> columns = this.writerSliceConfig.getListConfiguration(Key.COLUMNS);
+            List<Configuration> columns = this.writerSliceConfig.getListConfiguration(Key.COLUMN);
             for (Configuration eachColumnConf : columns) {
                 String name = eachColumnConf.getString(Key.NAME);
                 int index = eachColumnConf.getInt(Key.INDEX);
