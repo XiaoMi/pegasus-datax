@@ -224,7 +224,26 @@ Pegasus不支持Schema，所有数据都以byte[]方式存储。<br />
 
 ## 4 配置步骤
 
-略
+* 下载DataX：
+
+```bash
+git clone https://github.com/qinzuoyan/DataX.git
+```
+
+* 编译构建：
+
+```bash
+cd DataX
+mvn -U clean package assembly:assembly -Dmaven.test.skip=true
+```
+
+* 参照上面的配置样例，准备配置文件```hdfs2pegasus.json```。
+
+* 运行：
+
+```base
+python target/datax/datax/bin/datax.py ./hdfs2pegasus.json
+```
 
 ## 5 约束限制
 
