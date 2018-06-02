@@ -37,7 +37,7 @@ COMMENT 'This is a test table'
 stored AS ORC;
 ```
 
-从Hive存储的HDFS向Pegasus系统导数据的配置样例（将aprefid列作为HashKey）：
+配置样例```hdfs2pegasus.json```，从Hive所存储的HDFS向Pegasus系统导数据，并将aprefid列作为HashKey：
 ```json
 {
   "job": {
