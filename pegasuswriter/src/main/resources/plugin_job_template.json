@@ -1,0 +1,12 @@
+{
+    "name": "pegasuswriter",
+    "parameter": {
+        "cluster": "",
+        "table": "",
+        "timeout_ms": "",
+        "ttl_seconds": "",
+        "retry_count": "",
+        "retry_delay_ms": "",
+        "column": []
+    }
+}

@@ -1,0 +1,6 @@
+{
+    "name": "pegasuswriter",
+    "class": "com.alibaba.datax.plugin.writer.pegasuswriter.PegasusWriter",
+    "description": "useScene: prod. mechanism: via Pegasus Java Client connect Pegasus write data concurrent.",
+    "developer": "xiaomi"
+}

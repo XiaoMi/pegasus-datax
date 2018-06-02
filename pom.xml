@@ -52,7 +52,7 @@
         <module>oraclereader</module>
         <module>odpsreader</module>
         <module>otsreader</module>
-        <module>otsstreamreader</module>
+        <!--module>otsstreamreader</module-->
         <module>txtfilereader</module>
         <module>hdfsreader</module>
         <module>streamreader</module>
@@ -84,6 +84,7 @@
         <module>hbase094xwriter</module>
         <module>hbase11xsqlwriter</module>
         <module>elasticsearchwriter</module>
+        <module>pegasuswriter</module>
 
         <!-- common support module -->
         <module>plugin-rdbms-util</module>
