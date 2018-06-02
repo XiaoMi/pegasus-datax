@@ -5,14 +5,14 @@
 
 ## 1 快速介绍
 
-Writer提供向[Pegasus](https://github.com/xiaomi/pegasus)系统的指定表中写入数据的功能。
+该Writer提供向[Pegasus](https://github.com/xiaomi/pegasus)系统的指定表中写入数据的功能。
 
 ## 2 功能与限制
 
-* 写数据使用[Pegasus Java Client](https://github.com/xiaomi/pegasus-java-client)，当前使用[1.8.0-thrift-0.11.0-inlined-release](https://github.com/XiaoMi/pegasus-java-client/releases/tag/1.8.0-thrift-0.11.0-inlined-release)版本，你需要先maven install该版本的客户端库；
+* 写数据使用[Pegasus Java Client](https://github.com/xiaomi/pegasus-java-client)，当前使用[1.8.0-thrift-0.11.0-inlined-release](https://github.com/XiaoMi/pegasus-java-client/releases/tag/1.8.0-thrift-0.11.0-inlined-release)版本，你需要先maven install该客户端库；
 * Pegasus是Key-Value系统，不支持Schema，所有类型的数据存储到Pegasus中时都需要转化为byte[]进行存储；
-* 通过column配置列映射，指定name作为Pegasus存储的SortKey，指定index来确定哪一列作为Pegasus存储的Vale；
-* 需要在column配置指定一个列作为Pegasus存储的HashKey，且这一列必须是unique的；
+* 通过column配置列映射，name作为Pegasus存储的SortKey，index确定哪一列作为Value；
+* 需要在column配置中指定一个列作为Pegasus存储的HashKey，且这一列必须是unique的；
 
 ## 3 功能说明
 
@@ -37,7 +37,7 @@ COMMENT 'This is a test table'
 stored AS ORC;
 ```
 
-直接从Hive存储的HDFS向Pegasus系统导数据的配置样例（将aprefid列作为HashKey）：
+从Hive存储的HDFS向Pegasus系统导数据的配置样例（将aprefid列作为HashKey）：
 ```json
 {
   "job": {
@@ -146,11 +146,11 @@ stored AS ORC;
 
  	* 必选：否 <br />
 
- 	* 默认值：utf-8，**慎重修改** <br />
+ 	* 默认值：UTF-8，**慎重修改** <br />
 
 * **timeout_ms**
 
-	* 描述：写数据的超时时间，单位毫秒。<br />
+	* 描述：写数据操作的超时时间，单位毫秒。<br />
 
 	* 必选：否 <br />
 
@@ -158,7 +158,7 @@ stored AS ORC;
 
 * **ttl_seconds**
 
- 	* 描述：写数据的TTL(Time-To-Live)时间，单位秒。 <br />
+ 	* 描述：写数据的TTL(Time-To-Live)时间限制，单位秒。 <br />
 
 	* 必选：否 <br />
 
@@ -174,7 +174,7 @@ stored AS ORC;
 
 * **retry_delay_ms**
 
-	* 描述：写数据失败后进行下一次重试的等待时间，单位毫秒。 <br />
+	* 描述：写数据失败后等待下一次重试的时间，单位毫秒。 <br />
 
 	* 必选：否 <br />
 
@@ -182,34 +182,34 @@ stored AS ORC;
 
 * **column**
 
-		用户需要指定Column字段信息，配置如下：
+	用户需要指定Column字段信息，配置如下：
 
-		```json
-		"column":
-                 [
-                            {
-                                "name": "_hash_key_",
-                                "index": 0
-                            },
-                            {
-                                "name": "_empty_sort_key_",
-                                "index": 1
-                            },
-                            {
-                                "name": "some_column_name",
-                                "index": 2
-                            }
-                 ]
-		```
+	```json
+	"column":
+      [
+        {
+          "name": "_hash_key_",
+          "index": 0
+        },
+        {
+          "name": "_empty_sort_key_",
+          "index": 1
+        },
+        {
+          "name": "some_column_name",
+          "index": 2
+        }
+      ]
+	```
 
-		其中name为"_hash_key_"和"_empty_sort_key_"有特殊意义：
-		* "_hash_key_"指定的列作为Pegasus存储时的HashKey；
-		* "_empty_sort_key_"指定的列在存储时使用空串("")作为SortKey；
+	其中name为"_hash_key_"和"_empty_sort_key_"有特殊意义：
+	* "_hash_key_"指定的列作为Pegasus存储时的HashKey；
+	* "_empty_sort_key_"指定的列在存储时使用空串("")作为SortKey；
 
-		要求：
-		* name不能有重复；
-		* 必须指定"_hash_key_"列；
-		* 除了"_hash_key_"列外，至少再指定一个数据列；
+	要求：
+	* name不能有重复；
+	* 必须指定"_hash_key_"列；
+	* 除了"_hash_key_"列外，至少再指定一个数据列；
 
 	* 必选：是 <br />
 
