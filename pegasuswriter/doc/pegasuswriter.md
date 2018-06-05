@@ -56,7 +56,7 @@ stored AS ORC;
       "writer": {
         "name": "pegasuswriter",
         "parameter": {
-          "cluster": "xxx:31601,xxx:31601",
+          "cluster": "x.x.x.x:34601,x.x.x.x:34601",
           "table": "datax_test",
           "encoding": "UTF-8",
           "timeout_ms": "10000",
@@ -224,16 +224,20 @@ Pegasus不支持Schema，所有数据都以byte[]方式存储。<br />
 
 ## 4 配置步骤
 
-* 下载DataX：
+* 下载和安装Pegasus Java Client
 
 ```bash
-git clone https://github.com/qinzuoyan/DataX.git
+git clone https://github.com/xiaomi/pegasus-java-client
+cd pegasus-java-client
+git checkout 1.8.0-thrift-0.11.0-inlined-release
+mvn clean install -DskipTests
 ```
 
-* 编译构建：
+* 下载和编译DataX：
 
 ```bash
-cd DataX
+git clone https://github.com/xiaomi/pegasus-datax.git
+cd pegasus-datax
 mvn -U clean package assembly:assembly -Dmaven.test.skip=true
 ```
 
@@ -252,3 +256,4 @@ python target/datax/datax/bin/datax.py ./hdfs2pegasus.json
 ## 6 FAQ
 
 略
+
