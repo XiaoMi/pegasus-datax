@@ -1,6 +1,5 @@
 package com.alibaba.datax.plugin.writer.pegasuswriter;
 
-import com.alibaba.datax.common.element.Column;
 import com.alibaba.datax.common.element.Record;
 import com.alibaba.datax.common.exception.DataXException;
 import com.alibaba.datax.common.plugin.RecordReceiver;
@@ -9,9 +8,8 @@ import com.alibaba.datax.common.util.Configuration;
 import com.xiaomi.infra.pegasus.client.PException;
 import com.xiaomi.infra.pegasus.client.PegasusTableInterface;
 import org.apache.commons.io.Charsets;
+import org.apache.commons.lang3.text.StrSubstitutor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 import java.util.*;
@@ -21,8 +19,6 @@ import java.util.*;
  */
 public class PegasusWriter extends Writer {
     public static class Job extends Writer.Job {
-        private static final Logger LOG = LoggerFactory.getLogger(Job.class);
-
         private Configuration originalConfig;
 
         @Override
@@ -66,33 +62,42 @@ public class PegasusWriter extends Writer {
                         String.format("您配置了不合法的%s: [%d]", Key.RETRY_DELAY_MS, retry_delay));
             }
 
-            // check columns
-            List<Configuration> columns = this.originalConfig.getListConfiguration(Key.COLUMN);
-            if (null == columns || columns.size() == 0) {
-                throw DataXException.asDataXException(PegasusWriterErrorCode.REQUIRED_VALUE, "您需要指定column");
-            }else{
-                Set<String> nameSet = new HashSet<String>();
-                for (Configuration eachColumnConf : columns) {
-                    String name = eachColumnConf.getNecessaryValue(Key.NAME, PegasusWriterErrorCode.COLUMN_REQUIRED_VALUE);
-                    if (nameSet.contains(name)) {
-                        throw DataXException.asDataXException(PegasusWriterErrorCode.ILLEGAL_VALUE,
-                                String.format("您在columns中指定了name为[%s]的重复项", name));
-                    }
-                    nameSet.add(name);
-                    eachColumnConf.getNecessaryValue(Key.INDEX, PegasusWriterErrorCode.COLUMN_REQUIRED_VALUE);
-                    int index = eachColumnConf.getInt(Key.INDEX);
-                    if (index < 0) {
-                        throw DataXException.asDataXException(PegasusWriterErrorCode.ILLEGAL_VALUE,
-                                String.format("您在columns中指定了name为[%s]的项，其index为负数", name));
-                    }
+            // check mapping
+            Configuration mappingConf = this.originalConfig.getConfiguration(Key.MAPPING);
+            if (null == mappingConf) {
+                throw DataXException.asDataXException(PegasusWriterErrorCode.REQUIRED_VALUE,
+                        String.format("您需要指定%s", Key.MAPPING));
+            }
+
+            mappingConf.getNecessaryValue(Key.HASH_KEY, PegasusWriterErrorCode.MAPPING_REQUIRED_VALUE);
+
+            List<Configuration> values = mappingConf.getListConfiguration(Key.VALUES);
+            if (null == values) {
+                throw DataXException.asDataXException(PegasusWriterErrorCode.MAPPING_REQUIRED_VALUE,
+                        String.format("您需要在%s中指定%s", Key.MAPPING, Key.VALUES));
+            }
+            if (values.isEmpty()) {
+                throw DataXException.asDataXException(PegasusWriterErrorCode.MAPPING_REQUIRED_VALUE,
+                        String.format("您需要在%s中指定非空的%s", Key.MAPPING, Key.VALUES));
+            }
+
+            Set<String> sortKeySet = new HashSet<String>();
+            for (int i = 0; i < sortKeySet.size(); i++) {
+                Configuration valueConf = values.get(i);
+                String sortKey = valueConf.getString(Key.SORT_KEY);
+                if (null == sortKey) {
+                    throw DataXException.asDataXException(PegasusWriterErrorCode.MAPPING_REQUIRED_VALUE,
+                            String.format("您需要在%s[%d]中指定%s", Key.VALUES, i, Key.SORT_KEY));
                 }
-                if (!nameSet.contains(Constant.HASH_KEY)) {
-                    throw DataXException.asDataXException(PegasusWriterErrorCode.REQUIRED_VALUE,
-                            String.format("您需要在columns中指定name为[%s]的项", Constant.HASH_KEY));
+                if (sortKeySet.contains(sortKey)) {
+                    throw DataXException.asDataXException(PegasusWriterErrorCode.ILLEGAL_VALUE,
+                            String.format("您在%s中指定了重复的%s: %s", Key.VALUES, Key.SORT_KEY, sortKey));
                 }
-                if (nameSet.size() < 2) {
-                    throw DataXException.asDataXException(PegasusWriterErrorCode.REQUIRED_VALUE,
-                            String.format("您需要在columns中指定至少一个name不为[%s]的项", Constant.HASH_KEY));
+                sortKeySet.add(sortKey);
+                String value = valueConf.getString(Key.VALUE);
+                if (null == value) {
+                    throw DataXException.asDataXException(PegasusWriterErrorCode.MAPPING_REQUIRED_VALUE,
+                            String.format("您需要在%s[%d]中指定%s", Key.VALUES, i, Key.VALUE));
                 }
             }
         }
@@ -120,8 +125,6 @@ public class PegasusWriter extends Writer {
     }
 
     public static class Task extends Writer.Task {
-        private static final Logger LOG = LoggerFactory.getLogger(Task.class);
-
         private Configuration writerSliceConfig;
 
         private Charset encoding;
@@ -136,9 +139,9 @@ public class PegasusWriter extends Writer {
 
         private PegasusTableInterface pegasusTable;
 
-        private int hashKeyIndex;
+        private String hashKey;
 
-        private List<Pair<byte[], Integer>> sortKeyList;
+        private List<Pair<String, String>> sortKeyList;
 
         @Override
         public void init() {
@@ -149,18 +152,14 @@ public class PegasusWriter extends Writer {
             this.retryCount = this.writerSliceConfig.getInt(Key.RETRY_COUNT, Constant.DEFAULT_RETRY_COUNT);
             this.retryDelayMs = this.writerSliceConfig.getInt(Key.RETRY_DELAY_MS, Constant.DEFAULT_RETRY_DELAY_MS);
             this.pegasusTable = PegasusUtil.openTable(this.writerSliceConfig);
-            this.sortKeyList = new ArrayList<Pair<byte[], Integer>>();
-            List<Configuration> columns = this.writerSliceConfig.getListConfiguration(Key.COLUMN);
-            for (Configuration eachColumnConf : columns) {
-                String name = eachColumnConf.getString(Key.NAME);
-                int index = eachColumnConf.getInt(Key.INDEX);
-                if (name.equals(Constant.HASH_KEY)) {
-                    this.hashKeyIndex = index;
-                } else if (name.equals(Constant.EMPTY_SORT_KEY)) {
-                    this.sortKeyList.add(Pair.of(Constant.EMPTY_BYTES, Integer.valueOf(index)));
-                } else {
-                    this.sortKeyList.add(Pair.of(name.getBytes(this.encoding), Integer.valueOf(index)));
-                }
+            Configuration mappingConf = this.writerSliceConfig.getConfiguration(Key.MAPPING);
+            this.hashKey = mappingConf.getNecessaryValue(Key.HASH_KEY, PegasusWriterErrorCode.MAPPING_REQUIRED_VALUE);
+            this.sortKeyList = new ArrayList<Pair<String, String>>();
+            List<Configuration> values = mappingConf.getListConfiguration(Key.VALUES);
+            for (Configuration valueConf : values) {
+                String sortKey = valueConf.getString(Key.SORT_KEY);
+                String value = valueConf.getString(Key.VALUE);
+                this.sortKeyList.add(Pair.of(sortKey, value));
             }
         }
 
@@ -171,39 +170,37 @@ public class PegasusWriter extends Writer {
         @Override
         public void startWrite(RecordReceiver recordReceiver) {
             Record record;
+            Map<String, String> subMap = new HashMap<String, String>();
+            StrSubstitutor substitutor = new StrSubstitutor(subMap);
             while ((record = recordReceiver.getFromReader()) != null) {
                 try {
-                    Column column = record.getColumn(this.hashKeyIndex);
-                     if (column == null) {
-                         throw DataXException.asDataXException(PegasusWriterErrorCode.RUNTIME_EXCEPTION,
-                                 String.format("record中找不到index为[%d]的column.", this.hashKeyIndex));
-                     }
-                     byte[] hashKey = PegasusUtil.columnToBytes(column, this.encoding);
-                     List<Pair<byte[], byte[]>> values = new ArrayList<Pair<byte[], byte[]>>();
-                     for (Pair<byte[], Integer> pair : this.sortKeyList) {
-                         column = record.getColumn(pair.getRight());
-                         if (column == null) {
-                             throw DataXException.asDataXException(PegasusWriterErrorCode.RUNTIME_EXCEPTION,
-                                     String.format("record中找不到index为[%d]的column.", pair.getRight()));
-                         }
-                         values.add(Pair.of(pair.getLeft(), PegasusUtil.columnToBytes(column, this.encoding)));
-                     }
-                     int retry = 0;
-                     while (true) {
-                         try {
-                             this.pegasusTable.multiSet(hashKey, values, this.ttlSeconds, this.timeoutMs);
-                             break;
-                         } catch (PException pe) {
-                             if (retry >= this.retryCount) {
-                                 throw DataXException.asDataXException(PegasusWriterErrorCode.RUNTIME_EXCEPTION,
-                                         String.format("写入数据到Pegasus失败: ", pe.getMessage()));
-                             }
-                         }
-                         if (this.retryDelayMs > 0) {
-                             Thread.sleep(this.retryDelayMs);
-                         }
-                         retry++;
-                     }
+                    int columnCount = record.getColumnNumber();
+                    for (int i = 0; i < columnCount; i++) {
+                        subMap.put(String.valueOf(i), PegasusUtil.columnToString(record.getColumn(i)));
+                    }
+                    byte[] hashKey = substitutor.replace(this.hashKey).getBytes(this.encoding);
+                    List<Pair<byte[], byte[]>> values = new ArrayList<Pair<byte[], byte[]>>();
+                    for (Pair<String, String> pair : this.sortKeyList) {
+                        byte[] sortKey = substitutor.replace(pair.getKey()).getBytes(this.encoding);
+                        byte[] value = substitutor.replace(pair.getValue()).getBytes(this.encoding);
+                        values.add(Pair.of(sortKey, value));
+                    }
+                    int retry = 0;
+                    while (true) {
+                        try {
+                            this.pegasusTable.multiSet(hashKey, values, this.ttlSeconds, this.timeoutMs);
+                            break;
+                        } catch (PException pe) {
+                            if (retry >= this.retryCount) {
+                                throw DataXException.asDataXException(PegasusWriterErrorCode.RUNTIME_EXCEPTION,
+                                        String.format("写入数据到Pegasus失败: ", pe.getMessage()));
+                            }
+                        }
+                        if (this.retryDelayMs > 0) {
+                            Thread.sleep(this.retryDelayMs);
+                        }
+                        retry++;
+                    }
                 } catch (Exception e) {
                     super.getTaskPluginCollector().collectDirtyRecord(record, e);
                 }

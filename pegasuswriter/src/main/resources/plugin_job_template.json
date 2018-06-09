@@ -8,6 +8,9 @@
         "ttl_seconds": "0",
         "retry_count": "2",
         "retry_delay_ms": "10000",
-        "column": []
+        "mapping": {
+            "hash_key" : "",
+            "values" : []
+        }
     }
 }

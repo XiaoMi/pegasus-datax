@@ -18,9 +18,13 @@ public class Key {
 
     public static final String RETRY_DELAY_MS = "retry_delay_ms";
 
-    public static final String COLUMN = "column";
+    public static final String MAPPING = "mapping";
 
-    public static final String NAME = "name";
+    public static final String HASH_KEY = "hash_key";
 
-    public static final String INDEX = "index";
+    public static final String VALUES = "values";
+
+    public static final String SORT_KEY = "sort_key";
+
+    public static final String VALUE = "value";
 }
