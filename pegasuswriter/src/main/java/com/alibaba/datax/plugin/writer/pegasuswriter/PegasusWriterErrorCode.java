@@ -7,9 +7,9 @@ import com.alibaba.datax.common.spi.ErrorCode;
  */
 public enum PegasusWriterErrorCode implements ErrorCode {
     RUNTIME_EXCEPTION("PegasusWriter-00", "出现运行时异常,请联系我们."),
-    REQUIRED_VALUE("PegasusWriter-01", "您缺失了必须填写的参数值."),
+    REQUIRED_VALUE("PegasusWriter-01", "您在配置中缺失了必须填写的参数值."),
     MAPPING_REQUIRED_VALUE("HdfsWriter-02", "您在mapping配置中缺失了必须填写的参数值."),
-    ILLEGAL_VALUE("PegasusWriter-03", "您填写的参数值不合法."),
+    ILLEGAL_VALUE("PegasusWriter-03", "您在配置中填写的参数值不合法."),
     UNKNOWN_EXCEPTION("PegasusWriter-04","出现未知异常,请联系我们.");
 
     private final String code;
