@@ -10,9 +10,8 @@
 ## 2 功能与限制
 
 * 写数据使用[Pegasus Java Client](https://github.com/xiaomi/pegasus-java-client)，当前使用[1.8.0-thrift-0.11.0-inlined-release](https://github.com/XiaoMi/pegasus-java-client/releases/tag/1.8.0-thrift-0.11.0-inlined-release)版本，你需要先maven install该客户端库；
-* Pegasus是Key-Value系统，不支持Schema，所有类型的数据存储到Pegasus中时都需要转化为byte[]进行存储；
-* 通过column配置列映射，name作为Pegasus存储的SortKey，index确定哪一列作为Value；
-* 需要在column配置中指定一个列作为Pegasus存储的HashKey，且这一列必须是unique的；
+* Pegasus是Key-Value系统，不支持Schema，所有类型的数据在存储到Pegasus中时都会转化为byte[]进行存储；
+* 通过mapping配置列映射，需要在mapping中指定一个列作为Pegasus存储的HashKey；
 
 ## 3 功能说明
 
@@ -103,7 +102,7 @@ stored AS ORC;
 
 * **cluster**
 
-	* 描述：Pegasus集群的meta-server地址列表。格式：host1:port1,host2:port2 。<br />
+	* 描述：Pegasus集群的meta-server地址列表。格式：ip1:port1,ip2:port2 。<br />
 
 	* 必选：是 <br />
 

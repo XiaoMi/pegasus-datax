@@ -1,3 +1,6 @@
+**导数据到Pegasus中，请直接参考文档：**[pegasuswriter/doc/pegasuswriter.md](https://github.com/XiaoMi/pegasus-datax/blob/master/pegasuswriter/doc/pegasuswriter.md)
+
+
 ![Datax-logo](https://github.com/alibaba/DataX/blob/master/images/DataX-logo.jpg)
 
 
