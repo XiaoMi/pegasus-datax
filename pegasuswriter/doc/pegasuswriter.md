@@ -196,16 +196,25 @@ stored AS ORC;
           "index": 1
         },
         {
-          "name": "some_column_name",
-          "index": 2
+          "name": "_by_index_",
+          "index": 3
+          "value_index" : 4
+        },
+        {
+          "name": "sort_key_name",
+          "index": 5
         }
       ]
 	```
 
 	* 说明：
-	  * name为"\_hash\_key_"和"\_empty\_sort\_key_"表示特殊意义：
-        * "\_hash\_key_"指定的列作为Pegasus存储时的HashKey；
-        * "\_empty\_sort\_key_"指定的列在存储时使用空串("")作为SortKey；
+      * name指定存储时的SortKey，index指定的列作为Value；
+	  * name为"\_hash\_key_"、"\_empty\_sort\_key_"和"\_by\_index_"表示特殊意义：
+        * "\_hash\_key_"：表示index所指定的列作为Pegasus存储时的HashKey；
+        * "\_empty\_sort\_key_"：表示index所指定的列在Pegasus存储时使用空串("")作为SortKey；
+        * "\_by\_index_"：表示index所指定的列在Pegasus存储时作为SortKey;
+          * 此时如果指定了"value_index"，则用value_index所指定的列作为Value；
+          * 如果没有指定"value_index"，则用空串("")作为Value；
 	  * name不能有重复；
 	  * 必须指定"\_hash\_key_"列；
 	  * 除了"\_hash\_key_"列外，至少再指定一个数据列；
