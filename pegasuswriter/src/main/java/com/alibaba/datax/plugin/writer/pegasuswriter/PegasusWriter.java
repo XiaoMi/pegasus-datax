@@ -82,7 +82,7 @@ public class PegasusWriter extends Writer {
             }
 
             Set<String> sortKeySet = new HashSet<String>();
-            for (int i = 0; i < sortKeySet.size(); i++) {
+            for (int i = 0; i < values.size(); i++) {
                 Configuration valueConf = values.get(i);
                 String sortKey = valueConf.getString(Key.SORT_KEY);
                 if (null == sortKey) {
