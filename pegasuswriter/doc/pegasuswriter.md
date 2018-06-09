@@ -197,7 +197,7 @@ stored AS ORC;
         },
         {
           "name": "_by_index_",
-          "index": 3
+          "index": 3,
           "value_index" : 4
         },
         {
