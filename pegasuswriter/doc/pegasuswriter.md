@@ -40,85 +40,62 @@ stored AS ORC;
 配置样例```hdfs2pegasus.json```，从Hive所存储的HDFS向Pegasus系统导数据，并将aprefid列作为HashKey：
 ```json
 {
-  "job": {
-    "content": [
-    {
-      "reader": {
-        "name": "hdfsreader",
-        "parameter": {
-          "defaultFS": "hdfs://xxx:port",
-          "path": "/user/hive/warehouse/pegasus.db/test_table",
-          "encoding": "UTF-8",
-          "fileType": "orc",
-          "column": ["*"]
+    "job":{
+        "content":[
+            {
+                "reader":{
+                    "name":"hdfsreader",
+                    "parameter":{
+                        "defaultFS":"hdfs://xxx:port",
+                        "path":"/user/hive/warehouse/pegasus.db/test_table",
+                        "encoding":"UTF-8",
+                        "fileType":"orc",
+                        "column":[
+                            "*"
+                        ]
+                    }
+                },
+                "writer":{
+                    "name":"pegasuswriter",
+                    "parameter":{
+                        "cluster":"x.x.x.x:34601,x.x.x.x:34601",
+                        "table":"datax_test",
+                        "encoding":"UTF-8",
+                        "timeout_ms":"10000",
+                        "ttl_seconds":"0",
+                        "retry_count":"2",
+                        "retry_delay_ms":"10000",
+                        "mapping":{
+                            "hash_key":"${0}",
+                            "values":[
+                                {
+                                    "sort_key":"",
+                                    "value":"${1}"
+                                },
+                                {
+                                    "sort_key":"la_t",
+                                    "value":"${3}"
+                                },
+                                {
+                                    "sort_key":"lo_t",
+                                    "value":"${4}"
+                                },
+                                {
+                                    "sort_key":"${6}",
+                                    "value":"${6},${10}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ],
+        "setting":{
+            "speed":{
+                "channel":"1"
+            }
         }
-      },
-      "writer": {
-        "name": "pegasuswriter",
-        "parameter": {
-          "cluster": "x.x.x.x:34601,x.x.x.x:34601",
-          "table": "datax_test",
-          "encoding": "UTF-8",
-          "timeout_ms": "10000",
-          "ttl_seconds": "0",
-          "retry_count": "2",
-          "retry_delay_ms": "10000",
-          "column": [
-          {
-            "name": "_hash_key_",
-            "index": 0
-          },
-          {
-            "name": "bssid",
-            "index": 1
-          },
-          {
-            "name": "ssid",
-            "index": 2
-          },
-          {
-            "name": "la_t",
-            "index": 3
-          },
-          {
-            "name": "lo_t",
-            "index": 4
-          },
-          {
-            "name": "label_t",
-            "index": 5
-          },
-          {
-            "name": "last_update_dt_t",
-            "index": 6
-          },
-          {
-            "name": "la_b",
-            "index": 7
-          },
-          {
-            "name": "lo_b",
-            "index": 8
-          },
-          {
-            "name": "label_b",
-            "index": 9
-          },
-          {
-            "name": "last_update_dt_b",
-            "index": 10
-          }
-          ]
-        }
-      }
     }
-    ],
-    "setting": {
-      "speed": {
-        "channel": "100"
-      }
-    }
-  }
 }
 ```
 
@@ -180,44 +157,35 @@ stored AS ORC;
 
 	* 默认值：10000，**建议在1000以上** <br />
 
-* **column**
+* **mapping**
 
-	用户需要指定Column字段信息，配置如下：
+	用户需要指定Column字段到Pegasus存储的映射关系，配置如下：
 
 	```json
-	"column":
-      [
-        {
-          "name": "_hash_key_",
-          "index": 0
-        },
-        {
-          "name": "_empty_sort_key_",
-          "index": 1
-        },
-        {
-          "name": "_by_sort_key_index_",
-          "sort_key_index": 3,
-          "index" : 4
-        },
-        {
-          "name": "sort_key_name",
-          "index": 5
-        }
-      ]
+    "mapping":{
+        "hash_key":"",
+        "values":[
+            {
+                "sort_key":"",
+                "value":""
+            },
+            {
+                "sort_key":"",
+                "value":""
+            }
+        ]
+    }
 	```
 
 	* 说明：
-      * name指定存储时的SortKey，index指定的列作为Value；
-	  * name为"\_hash\_key_"、"\_empty\_sort\_key_"和"\_by\_sort\_key\_index_"表示特殊意义：
-        * "\_hash\_key_"：表示index所指定的列作为Pegasus存储时的HashKey；
-        * "\_empty\_sort\_key_"：表示index所指定的列在Pegasus存储时使用空串("")作为SortKey；
-        * "\_by\_sort\_key\_index_"：表示用sort_key_index所指定的列在Pegasus存储时作为SortKey;
-          * 如果"index"不等于-1，则用index所指定的列作为Value；
-          * 如果"index"等于-1，则用空串("")作为Value；
-	  * name不能有重复；
-	  * 必须指定"\_hash\_key_"列；
-	  * 除了"\_hash\_key_"列外，至少再指定一个数据列；
+	  * mapping中必须指定hash_key和values；
+	  * hash_key的值不能为空；
+	  * values的列表不能为空，且列表中每个元素必须指定sort_key和value，不允许出现重复的sort_key；
+	  * sort_key和value的值可以为空；
+	  * hash_key、sort_key和value的值中可以通过${i}的方式嵌入Column[i]的值：
+	    * ${i}可以出现多次，所有地方都会被替换；
+	    * 如果i不是整数或者Column[i]不存在，则保留原状，不进行替换；
+	    * 如果想表达原始的"$"符号，可以用"$$"进转义，譬如"$${1}"就不会被Column[1]替换，而是转换为"${1}"字符串；
 
 	* 必选：是 <br />
 

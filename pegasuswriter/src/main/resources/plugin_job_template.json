@@ -10,7 +10,16 @@
         "retry_delay_ms": "10000",
         "mapping": {
             "hash_key" : "",
-            "values" : []
+            "values" : [
+                {
+                    "sort_key": "",
+                    "value": ""
+                },
+                {
+                    "sort_key": "",
+                    "value": ""
+                }
+            ]
         }
     }
 }
