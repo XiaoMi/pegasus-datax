@@ -3,6 +3,7 @@
     "parameter": {
         "cluster": "",
         "table": "",
+        "write_type": "insert",
         "encoding": "UTF-8",
         "timeout_ms": "10000",
         "ttl_seconds": "0",

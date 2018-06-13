@@ -59,6 +59,7 @@ stored AS ORC;
                     "parameter":{
                         "cluster":"x.x.x.x:34601,x.x.x.x:34601",
                         "table":"datax_test",
+                        "write_type":"insert",
                         "encoding":"UTF-8",
                         "timeout_ms":"10000",
                         "ttl_seconds":"0",
@@ -115,6 +116,14 @@ stored AS ORC;
 	* 必选：是 <br />
 
 	* 默认值：无 <br />
+
+* **write_type**
+
+	* 描述：数据写入类型：insert或者delete。 <br />
+
+	* 必选：否 <br />
+
+	* 默认值：insert <br />
 
 * **encoding**
 

@@ -4,6 +4,8 @@ package com.alibaba.datax.plugin.writer.pegasuswriter;
  * Created by qinzuoyan on 18/6/1.
  */
 public class Constant {
+    public static final String WRITE_TYPE_INSERT = "insert";
+    public static final String WRITE_TYPE_DELETE = "delete";
 
     public static final String DEFAULT_ENCODING = "UTF-8";
 

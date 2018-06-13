@@ -31,6 +31,13 @@ public class PegasusWriter extends Writer {
             // check cluster & table
             PegasusUtil.openTable(this.originalConfig);
 
+            // check write_type
+            String writeType = this.originalConfig.getString(Key.WRITE_TYPE, Constant.WRITE_TYPE_INSERT);
+            if (!writeType.equals("insert") && !writeType.equals("delete")) {
+                throw DataXException.asDataXException(PegasusWriterErrorCode.ILLEGAL_VALUE,
+                        String.format("您配置了不合法的%s: [%s]", Key.WRITE_TYPE, writeType));
+            }
+
             // check encoding
             String encoding = this.originalConfig.getString(Key.ENCODING, Constant.DEFAULT_ENCODING);
             try {
@@ -95,7 +102,7 @@ public class PegasusWriter extends Writer {
                 }
                 sortKeySet.add(sortKey);
                 String value = valueConf.getString(Key.VALUE);
-                if (null == value) {
+                if (null == value && writeType.equals(Constant.WRITE_TYPE_INSERT)) {
                     throw DataXException.asDataXException(PegasusWriterErrorCode.MAPPING_REQUIRED_VALUE,
                             String.format("您需要在%s[%d]中指定%s", Key.VALUES, i, Key.VALUE));
                 }
@@ -127,6 +134,8 @@ public class PegasusWriter extends Writer {
     public static class Task extends Writer.Task {
         private Configuration writerSliceConfig;
 
+        private boolean isInsert;
+
         private Charset encoding;
 
         private int timeoutMs;
@@ -146,6 +155,7 @@ public class PegasusWriter extends Writer {
         @Override
         public void init() {
             this.writerSliceConfig = getPluginJobConf();
+            this.isInsert = this.writerSliceConfig.getString(Key.WRITE_TYPE, Constant.WRITE_TYPE_INSERT).equals(Constant.WRITE_TYPE_INSERT);
             this.encoding = Charsets.toCharset(this.writerSliceConfig.getString(Key.ENCODING, Constant.DEFAULT_ENCODING));
             this.timeoutMs = this.writerSliceConfig.getInt(Key.TIMEOUT_MS, Constant.DEFAULT_TIMEOUT_MS);
             this.ttlSeconds = this.writerSliceConfig.getInt(Key.TTL_SECONDS, Constant.DEFAULT_TTL_SECONDS);
@@ -172,6 +182,8 @@ public class PegasusWriter extends Writer {
             Record record;
             Map<String, String> subMap = new HashMap<String, String>();
             StrSubstitutor substitutor = new StrSubstitutor(subMap);
+            List<Pair<byte[], byte[]>> insertValues = null;
+            List<byte[]> deleteValues = null;
             while ((record = recordReceiver.getFromReader()) != null) {
                 try {
                     int columnCount = record.getColumnNumber();
@@ -179,21 +191,33 @@ public class PegasusWriter extends Writer {
                         subMap.put(String.valueOf(i), PegasusUtil.columnToString(record.getColumn(i)));
                     }
                     byte[] hashKey = substitutor.replace(this.hashKey).getBytes(this.encoding);
-                    List<Pair<byte[], byte[]>> values = new ArrayList<Pair<byte[], byte[]>>();
-                    for (Pair<String, String> pair : this.sortKeyList) {
-                        byte[] sortKey = substitutor.replace(pair.getKey()).getBytes(this.encoding);
-                        byte[] value = substitutor.replace(pair.getValue()).getBytes(this.encoding);
-                        values.add(Pair.of(sortKey, value));
+                    if (this.isInsert) {
+                        insertValues = new ArrayList<Pair<byte[], byte[]>>();
+                        for (Pair<String, String> pair : this.sortKeyList) {
+                            byte[] sortKey = substitutor.replace(pair.getKey()).getBytes(this.encoding);
+                            byte[] value = substitutor.replace(pair.getValue()).getBytes(this.encoding);
+                            insertValues.add(Pair.of(sortKey, value));
+                        }
+                    } else {
+                        deleteValues = new ArrayList<byte[]>();
+                        for (Pair<String, String> pair : this.sortKeyList) {
+                            byte[] sortKey = substitutor.replace(pair.getKey()).getBytes(this.encoding);
+                            deleteValues.add(sortKey);
+                        }
                     }
                     int retry = 0;
                     while (true) {
                         try {
-                            this.pegasusTable.multiSet(hashKey, values, this.ttlSeconds, this.timeoutMs);
+                            if (this.isInsert) {
+                                this.pegasusTable.multiSet(hashKey, insertValues, this.ttlSeconds, this.timeoutMs);
+                            } else {
+                                this.pegasusTable.multiDel(hashKey, deleteValues, this.timeoutMs);
+                            }
                             break;
                         } catch (PException pe) {
                             if (retry >= this.retryCount) {
                                 throw DataXException.asDataXException(PegasusWriterErrorCode.RUNTIME_EXCEPTION,
-                                        String.format("写入数据到Pegasus失败: ", pe.getMessage()));
+                                        String.format("更新数据到Pegasus失败: ", pe.getMessage()));
                             }
                         }
                         if (this.retryDelayMs > 0) {

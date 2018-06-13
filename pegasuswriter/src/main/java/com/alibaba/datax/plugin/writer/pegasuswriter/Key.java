@@ -8,6 +8,8 @@ public class Key {
 
     public static final String TABLE = "table";
 
+    public static final String WRITE_TYPE = "write_type";
+
     public static final String ENCODING = "encoding";
 
     public static final String TIMEOUT_MS = "timeout_ms";
